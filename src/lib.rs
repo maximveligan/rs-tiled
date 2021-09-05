@@ -361,6 +361,7 @@ pub struct Tileset {
     pub spacing: u32,
     pub margin: u32,
     pub tilecount: Option<u32>,
+    pub columns: u32,
     /// The Tiled spec says that a tileset can have mutliple images so a `Vec`
     /// is used. Usually you will only use one.
     pub images: Vec<Image>,
@@ -381,7 +382,7 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount), (first_gid, name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (first_gid, name, width, height, columns)) = get_attrs!(
            attrs,
            optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
@@ -393,6 +394,7 @@ impl Tileset {
                 ("name", name, |v| Some(v)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
+                ("columns", columns, |v:String| v.parse().ok()),
             ],
             TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
         );
@@ -423,6 +425,7 @@ impl Tileset {
             first_gid,
             name,
             tilecount,
+            columns,
             images,
             tiles,
             properties,
@@ -440,7 +443,7 @@ impl Tileset {
                 ("firstgid", first_gid, |v:String| v.parse().ok()),
                 ("source", name, |v| Some(v)),
             ],
-            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
+            TiledError::MalformedAttributes("tileset must have a firstgid, name, tilewidth, tileheight, and columns with correct types".to_string())
         );
 
         let tileset_path = map_path.ok_or(TiledError::Other("Maps with external tilesets must know their file location.  See parse_with_path(Path).".to_string()))?.with_file_name(source);
@@ -486,7 +489,7 @@ impl Tileset {
         parser: &mut EventReader<R>,
         attrs: &Vec<OwnedAttribute>,
     ) -> Result<Tileset, TiledError> {
-        let ((spacing, margin, tilecount), (name, width, height)) = get_attrs!(
+        let ((spacing, margin, tilecount), (name, width, height, columns)) = get_attrs!(
             attrs,
             optionals: [
                 ("spacing", spacing, |v:String| v.parse().ok()),
@@ -497,8 +500,9 @@ impl Tileset {
                 ("name", name, |v| Some(v)),
                 ("tilewidth", width, |v:String| v.parse().ok()),
                 ("tileheight", height, |v:String| v.parse().ok()),
+                ("columns", columns, |v:String| v.parse().ok()),
             ],
-            TiledError::MalformedAttributes("tileset must have a firstgid, name tile width and height with correct types".to_string())
+            TiledError::MalformedAttributes("tileset must have a firstgid, name, tilewidth, tileheight, and columns with correct types".to_string())
         );
 
         let mut images = Vec::new();
@@ -527,6 +531,7 @@ impl Tileset {
             spacing: spacing.unwrap_or(0),
             margin: margin.unwrap_or(0),
             tilecount: tilecount,
+            columns: columns,
             images: images,
             tiles: tiles,
             properties,
@@ -1082,7 +1087,7 @@ fn parse_animation<R: Read>(parser: &mut EventReader<R>) -> Result<Vec<Frame>, T
 fn parse_infinite_data<R: Read>(
     parser: &mut EventReader<R>,
     attrs: Vec<OwnedAttribute>,
-    width: u32,
+    _width: u32,
 ) -> Result<LayerData, TiledError> {
     let ((e, c), ()) = get_attrs!(
         attrs,
